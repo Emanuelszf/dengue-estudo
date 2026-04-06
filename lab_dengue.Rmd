@@ -1,0 +1,55 @@
+---
+title: "Dengue"
+output: html_notebook
+---
+
+
+```{r}
+library(readxl)
+library(plm)
+library(lmtest)
+library(dplyr)
+library(stringi)
+```
+
+# criando base de dados e limpando colunas
+
+```{r}
+df = read_excel("df_final.xlsx")
+df['sem_agua'] = df['Não possui ligação com a rede geral']
+df['Não possui ligação com a rede geral'] = NULL
+
+pop = read_excel("pop_ceara.xlsx")
+```
+
+# removendo acentos da coluna
+
+```{r}
+pop = pop %>%
+  mutate(Município, toupper(stri_trans_general(Município, "Latin-ASCII"))) # removendo acentos e deixando em MAIÚSCULO 
+pop$Município = pop$`toupper(stri_trans_general(Município, "Latin-ASCII"))`
+pop$`toupper(stri_trans_general(Município, "Latin-ASCII"))` = NULL
+pop$MUNICÍPIO = pop$Município
+pop$Município = NULL
+```
+
+# Fazendo os inner_join
+
+```{r}
+
+df = inner_join(df, pop, by = 'MUNICÍPIO')
+
+```
+
+# Fazendo configuração de variáveis
+
+```{r}
+df$taxa_incid = df$confirmado / df$população
+```
+
+
+```{r}
+model1 = lm(taxa_incid ~ sem_agua, df)
+summary(model1)
+```
+
