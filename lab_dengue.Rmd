@@ -1,5 +1,5 @@
 ---
-title: "dengue_lab"
+title: "R Notebook"
 output: html_notebook
 ---
 
@@ -11,20 +11,31 @@ library(readxl)
 library(dplyr)
 library(car)
 library(sandwich)
+library(spdep)
+library(sf)
+library(stargazer)
+library(splm)
+library(stringi)
+library(viridis)
+library(ggplot2)
+library(MASS)
+library(gridExtra)
+library(geobr)
+library(spatialreg)
 ```
 
 ```{r}
-df <- read_excel("df_final (1).xlsx")
+df <- read_excel(("base de dados/df.xlsx"))
 ```
 
 ```{r}
-df <- setNames(df, c("municipio", "semagua", "dengue",
+df <- setNames(df, c("municipio","codigo", "semagua", "dengue",
                      "incidencia","urb","pib_mil", "pop","pib_pc","saude_pormil","dens"))
 ```
 
 
 ```{r}
-modelo1 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) + saude_pormil
+modelo1 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) 
              , df,
              weights = pop)
 
@@ -43,9 +54,49 @@ df_semfort = df %>%
 ```
 
 ```{r}
-modelo2 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) + saude_pormil
+modelo2 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc)
              , df_semfort,
              weights = pop)
 
 summary(modelo2)
 ```
+```{r}
+mapa_ce <- read_municipality(code_muni = "CE", year = 2022)
+```
+
+
+```{r}
+mapa_ce <- mapa_ce %>%
+  mutate(cod = as.numeric(code_muni),
+         municipio_clean = toupper(stri_trans_general(name_muni, "Latin-ASCII")))
+```
+
+```{r}
+nb_ce <- poly2nb(mapa_ce, queen = TRUE)
+listw_ce <- nb2listw(nb_ce, style = "W", zero.policy = TRUE)
+
+cat("Shapefile carregado:", nrow(mapa_ce), "municípios\n")
+cat("Municípios com vizinhos:", sum(card(nb_ce) > 0), "\n")
+```
+```{r}
+moran_geral <- moran.test(df$incidencia, listw_ce, zero.policy = TRUE)
+
+print(moran_geral)
+```
+```{r}
+lm.LMtests(modelo1, listw = listw_ce, test = c("LMlag", "LMerr", "RLMlag", "RLMerr"))
+```
+```{r}
+modelo_sem <- errorsarlm(
+  log(incidencia + 1) ~ semagua + urb + log(pib_pc),
+  data = df,
+  listw = listw_ce,
+  zero.policy = TRUE
+)
+
+summary(modelo_sem)
+```
+```{r}
+moran.test(residuals(modelo_sem), listw = listw_ce, zero.policy = TRUE)
+```
+
