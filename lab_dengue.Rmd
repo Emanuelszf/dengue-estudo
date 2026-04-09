@@ -1,55 +1,51 @@
 ---
-title: "Dengue"
+title: "dengue_lab"
 output: html_notebook
 ---
 
 
 ```{r}
-library(readxl)
-library(plm)
 library(lmtest)
+library(plm)
+library(readxl)
 library(dplyr)
-library(stringi)
+library(car)
+library(sandwich)
 ```
 
-# criando base de dados e limpando colunas
-
 ```{r}
-df = read_excel("df_final.xlsx")
-df['sem_agua'] = df['Não possui ligação com a rede geral']
-df['Não possui ligação com a rede geral'] = NULL
-
-pop = read_excel("pop_ceara.xlsx")
+df <- read_excel("df_final (1).xlsx")
 ```
 
-# removendo acentos da coluna
-
 ```{r}
-pop = pop %>%
-  mutate(Município, toupper(stri_trans_general(Município, "Latin-ASCII"))) # removendo acentos e deixando em MAIÚSCULO 
-pop$Município = pop$`toupper(stri_trans_general(Município, "Latin-ASCII"))`
-pop$`toupper(stri_trans_general(Município, "Latin-ASCII"))` = NULL
-pop$MUNICÍPIO = pop$Município
-pop$Município = NULL
-```
-
-# Fazendo os inner_join
-
-```{r}
-
-df = inner_join(df, pop, by = 'MUNICÍPIO')
-
-```
-
-# Fazendo configuração de variáveis
-
-```{r}
-df$taxa_incid = df$confirmado / df$população
+df <- setNames(df, c("municipio", "semagua", "dengue",
+                     "incidencia","urb","pib_mil", "pop","pib_pc","saude_pormil","dens"))
 ```
 
 
 ```{r}
-model1 = lm(taxa_incid ~ sem_agua, df)
-summary(model1)
+modelo1 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) + saude_pormil
+             , df,
+             weights = pop)
+
+summary(modelo1)
+```
+```{r}
+vif(modelo1)
 ```
 
+```{r}
+coeftest(modelo1, vcov = vcovHC(modelo1, type = "HC3"))
+```
+```{r}
+df_semfort = df %>%
+  filter(municipio != "FORTALEZA")
+```
+
+```{r}
+modelo2 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) + saude_pormil
+             , df_semfort,
+             weights = pop)
+
+summary(modelo2)
+```
