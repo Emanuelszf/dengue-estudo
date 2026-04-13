@@ -25,12 +25,12 @@ library(spatialreg)
 ```
 
 ```{r}
-df <- read_excel(("base de dados/df.xlsx"))
+df <- read_excel(("base de dados/df_dengue.xlsx"))
 ```
 
 ```{r}
-df <- setNames(df, c("municipio","codigo", "semagua", "dengue",
-                     "incidencia","urb","pib_mil", "pop","pib_pc","saude_pormil","dens"))
+df <- setNames(df, c("municipio", "semagua", "dengue",
+                     "incidencia","urb","pib_mil", "pop","saude_pormil", "densidade", "pib_pc","idm","codigo"))
 ```
 
 
