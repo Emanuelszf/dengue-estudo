@@ -25,22 +25,23 @@ library(spatialreg)
 ```
 
 ```{r}
-df <- read_excel(("base de dados/df_dengue.xlsx"))
+df <- read_excel(("base de dados/df.xlsx"))
 ```
 
 ```{r}
-df <- setNames(df, c("municipio", "semagua", "dengue",
-                     "incidencia","urb","pib_mil", "pop","saude_pormil", "densidade", "pib_pc","idm","codigo"))
+df <- setNames(df, c("municipio","codigo", "semagua", "dengue",
+                     "incidencia","urb","pib_mil", "pop","pib_pc","saude_pormil","dens"))
 ```
 
 
 ```{r}
-modelo1 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc) 
-             , df,
+modelo1 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc),
+             df,
              weights = pop)
 
 summary(modelo1)
 ```
+
 ```{r}
 vif(modelo1)
 ```
@@ -60,6 +61,7 @@ modelo2 = lm(log(incidencia+1) ~ semagua + urb + log(pib_pc)
 
 summary(modelo2)
 ```
+
 ```{r}
 mapa_ce <- read_municipality(code_muni = "CE", year = 2022)
 ```
@@ -78,14 +80,17 @@ listw_ce <- nb2listw(nb_ce, style = "W", zero.policy = TRUE)
 cat("Shapefile carregado:", nrow(mapa_ce), "municípios\n")
 cat("Municípios com vizinhos:", sum(card(nb_ce) > 0), "\n")
 ```
+
 ```{r}
 moran_geral <- moran.test(df$incidencia, listw_ce, zero.policy = TRUE)
 
 print(moran_geral)
 ```
+
 ```{r}
 lm.LMtests(modelo1, listw = listw_ce, test = c("LMlag", "LMerr", "RLMlag", "RLMerr"))
 ```
+
 ```{r}
 modelo_sem <- errorsarlm(
   log(incidencia + 1) ~ semagua + urb + log(pib_pc),
@@ -96,6 +101,7 @@ modelo_sem <- errorsarlm(
 
 summary(modelo_sem)
 ```
+
 ```{r}
 moran.test(residuals(modelo_sem), listw = listw_ce, zero.policy = TRUE)
 ```
